@@ -1,5 +1,4 @@
 pipeline{
-  def commit_id
   environment {
      IMAGE_NAME = "alpinehelloword"
      IMAGE_TAG  = "latest"
@@ -41,6 +40,7 @@ pipeline{
 	
 	
       stage('Preparation') {
+      	def commit_id
         checkout scm
         sh "git rev-parse --short HEAD > .git/commit-id"
         commit_id = readFile('.git/commit-id').trim()
