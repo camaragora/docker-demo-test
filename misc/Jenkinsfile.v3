@@ -38,21 +38,20 @@ pipeline{
         }
 	
   
-     stage('test') {
-      def myTestContainer = docker.image('node:4.6')
-      myTestContainer.pull()
-      myTestContainer.inside {
-        sh 'npm install --only=dev'
-        sh 'npm test'
-     }
-   }  
+    
      stage('Build Image') {
-       agent any
-	steps{
-	  script {
-	    sh 'docker build -t goracamara/$IMAGE_NAME:$IMAGE_TAG .'
-	   }  
-	 }
+      agent {
+                docker {
+                    alwaysPull true
+                    image 'node'
+                }
+            }
+            steps {
+                sh 'npm install'
+               
+            }
+     
+       
      }
 
 
