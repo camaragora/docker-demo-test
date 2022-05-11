@@ -37,14 +37,6 @@ pipeline{
             }
         }
 	
-	
-	
-      stage('Preparation') {
-      
-        checkout scm
-        sh "git rev-parse --short HEAD > .git/commit-id"
-      
-     }	
   
      stage('Build Image') {
        agent any
