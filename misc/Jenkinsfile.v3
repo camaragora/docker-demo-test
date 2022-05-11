@@ -47,6 +47,19 @@ pipeline{
 	   }  
 	 }
      }
+     
+     stage('test') {
+       agent any
+	steps{
+	  script {
+	         sh 'npm install --only=dev'
+      		 sh 'npm test'
+	   }  
+	 }
+        
+       
+    
+   }
 
 
      stage('Run Container based on buildded image') {
