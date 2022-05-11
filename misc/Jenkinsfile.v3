@@ -67,7 +67,7 @@ pipeline{
 	steps{
 	  script {
 	    sh '''
-	    	  docker run --name $IMAGE_NAME -d -p 80:3000  goracamara/$IMAGE_NAME:$IMAGE_TAG
+		  docker run --name $IMAGE_NAME -d -p 80:3000 -e PORT=3000 goracamara/$IMAGE_NAME:$IMAGE_TAG
 	    	  sleep 5
 	    	  docker ps
 	    
