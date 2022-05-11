@@ -1,0 +1,146 @@
+pipeline{
+  def commit_id
+  environment {
+     IMAGE_NAME = "alpinehelloword"
+     IMAGE_TAG  = "latest"
+     STAGING    = "node-staging"
+     PRODUCTION = "node-production"
+  }
+  
+  agent none
+  stages {
+   
+     stage('Check Scm Changelog') {
+       agent any
+            steps {
+                script {
+                    def changeLogSets = currentBuild.changeSets
+                    for (int i = 0; i < changeLogSets.size(); i++) {
+                        def entries = changeLogSets[i].items
+                        for (int j = 0; j < entries.length; j++) {
+                            def entry = entries[j]
+                            if (entry.author.toString().contains('Jenkins') || entry.msg.contains('maven-release-plugin')) {
+                                echo "Les Commit effectués par le user jenkins sont toujours ignorés. C'est le cas des releases effectuées depuis la chaine d'integration avec le user jenkins"
+                                currentBuild.result = 'ABORTED'
+                                error('Aucun besoin de builder de façon cyclique les commits de Jenkins')
+                                return
+                            } else {
+                                echo "ID Commit : ${entry.commitId} \nAuteur : ${entry.author} \nDate : ${new Date(entry.timestamp)} \nMessage: ${entry.msg}"
+                                def files = new ArrayList(entry.affectedFiles)
+                                for (int k = 0; k < files.size(); k++) {
+                                    def file = files[k]
+                                    echo "  ${file.editType.name} ${file.path}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+	
+	
+	
+      stage('Preparation') {
+        checkout scm
+        sh "git rev-parse --short HEAD > .git/commit-id"
+        commit_id = readFile('.git/commit-id').trim()
+     }	
+  
+     stage('Build Image') {
+       agent any
+	steps{
+	  script {
+	    sh 'docker build -t goracamara/$IMAGE_NAME:$IMAGE_TAG .'
+	   }  
+	 }
+     }
+
+
+     stage('Run Container based on buildded image') {
+       agent any
+	steps{
+	  script {
+	    sh '''
+	    	  docker run --name $IMAGE_NAME -d -p 80:3000  goracamara/$IMAGE_NAME:$IMAGE_TAG
+	    	  sleep 5
+	    	  docker ps
+	    
+	    '''
+	   }  
+	 }
+     }
+     
+     stage('Test Image') {
+       agent any
+	steps{
+	  script {
+	    sh '''
+	    	 curl http://172.17.0.1 |grep -q "Hello World!"
+		 docker ps
+	    '''
+	   }  
+	 }
+     }
+     
+     stage('Clean Container') {
+       agent any
+	steps{
+	  script {
+	    sh '''
+	    	 docker stop $IMAGE_NAME
+	    	 docker rm -f $IMAGE_NAME
+	    '''
+	   }  
+	 }
+     }
+     
+     stage('Push image in staging and deploy it') {
+       when {
+          expression {GIT_BRANCH == 'origin/master'}
+       }
+       
+       agent any
+       environment {
+          HEROKU_API_KEY =  credentials('heroku_api_key')
+       }
+       
+       steps{
+         script {
+           sh '''
+           	 heroku container:login
+           	 heroku create $STAGING || echo "project already exist"
+           	 heroku container:push -a $STAGING web
+           	 heroku container:release -a $STAGING web
+           '''
+         }
+       }
+       
+	
+     }
+     
+     stage('Push image in production and deploy it') {
+       when {
+          expression {GIT_BRANCH == 'origin/master'}
+       }
+       
+       agent any
+       environment {
+          HEROKU_API_KEY =  credentials('heroku_api_key')
+       }
+       
+       steps{
+         script {
+           sh '''
+           	 heroku container:login
+           	 heroku create $PRODUCTION || echo "project already exist"
+           	 heroku container:push -a $PRODUCTION web
+           	 heroku container:release -a $PRODUCTION web
+           '''
+         }
+       }
+       
+	
+     }
+  }
+
+}
