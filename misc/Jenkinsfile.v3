@@ -2,7 +2,7 @@ pipeline{
   environment {
      IMAGE_NAME = "nodepipeline"
      IMAGE_TAG  = "latest"
-     STAGING    = "af-staging"
+     STAGING    = "afsenegal-staging"
      PRODUCTION = "af-production"
   }
   
