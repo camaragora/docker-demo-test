@@ -2,8 +2,8 @@ pipeline{
   environment {
      IMAGE_NAME = "nodepipeline"
      IMAGE_TAG  = "latest"
-     STAGING    = "node-staging"
-     PRODUCTION = "node-production"
+     STAGING    = "af-staging"
+     PRODUCTION = "af-production"
   }
   
   agent none
